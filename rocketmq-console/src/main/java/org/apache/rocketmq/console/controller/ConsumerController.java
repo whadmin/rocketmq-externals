@@ -17,7 +17,9 @@
 package org.apache.rocketmq.console.controller;
 
 import com.google.common.base.Preconditions;
+
 import javax.annotation.Resource;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.rocketmq.common.protocol.body.ConsumerConnection;
 import org.apache.rocketmq.console.model.ConnectionInfo;
@@ -43,57 +45,37 @@ public class ConsumerController {
     @Resource
     private ConsumerService consumerService;
 
+
+    /**
+     * 获取订阅组列表信息
+     *
+     * @return
+     */
     @RequestMapping(value = "/groupList.query")
     @ResponseBody
     public Object list() {
         return consumerService.queryGroupList();
     }
 
+    /**
+     * 获取指定消费组信息
+     *
+     * @param consumerGroup 消费分组
+     * @return
+     */
     @RequestMapping(value = "/group.query")
     @ResponseBody
     public Object groupQuery(@RequestParam String consumerGroup) {
         return consumerService.queryGroup(consumerGroup);
     }
 
-    @RequestMapping(value = "/resetOffset.do", method = {RequestMethod.POST})
-    @ResponseBody
-    public Object resetOffset(@RequestBody ResetOffsetRequest resetOffsetRequest) {
-        logger.info("op=look resetOffsetRequest={}", JsonUtil.obj2String(resetOffsetRequest));
-        return consumerService.resetOffset(resetOffsetRequest);
-    }
 
-    @RequestMapping(value = "/examineSubscriptionGroupConfig.query")
-    @ResponseBody
-    public Object examineSubscriptionGroupConfig(@RequestParam String consumerGroup) {
-        return consumerService.examineSubscriptionGroupConfig(consumerGroup);
-    }
-
-    @RequestMapping(value = "/deleteSubGroup.do", method = {RequestMethod.POST})
-    @ResponseBody
-    public Object deleteSubGroup(@RequestBody DeleteSubGroupRequest deleteSubGroupRequest) {
-        return consumerService.deleteSubGroup(deleteSubGroupRequest);
-    }
-
-    @RequestMapping(value = "/createOrUpdate.do", method = {RequestMethod.POST})
-    @ResponseBody
-    public Object consumerCreateOrUpdateRequest(@RequestBody ConsumerConfigInfo consumerConfigInfo) {
-        Preconditions.checkArgument(CollectionUtils.isNotEmpty(consumerConfigInfo.getBrokerNameList()) || CollectionUtils.isNotEmpty(consumerConfigInfo.getClusterNameList()),
-            "clusterName or brokerName can not be all blank");
-        return consumerService.createAndUpdateSubscriptionGroupConfig(consumerConfigInfo);
-    }
-
-    @RequestMapping(value = "/fetchBrokerNameList.query", method = {RequestMethod.GET})
-    @ResponseBody
-    public Object fetchBrokerNameList(@RequestParam String consumerGroup) {
-        return consumerService.fetchBrokerNameSetBySubscriptionGroup(consumerGroup);
-    }
-
-    @RequestMapping(value = "/queryTopicByConsumer.query")
-    @ResponseBody
-    public Object queryConsumerByTopic(@RequestParam String consumerGroup) {
-        return consumerService.queryConsumeStatsListByGroupName(consumerGroup);
-    }
-
+    /**
+     * 查询消费分组消费实例信息（终端）
+     *
+     * @param consumerGroup 消费分组
+     * @return
+     */
     @RequestMapping(value = "/consumerConnection.query")
     @ResponseBody
     public Object consumerConnection(@RequestParam(required = false) String consumerGroup) {
@@ -102,10 +84,98 @@ public class ConsumerController {
         return consumerConnection;
     }
 
+    /**
+     * 查询指定指定groupName（消费分组），指定客户端Id ConsumerRunningInfo(消费实例信息)
+     *
+     * @param consumerGroup 消费分组
+     * @param clientId
+     * @param jstack
+     * @return
+     */
     @RequestMapping(value = "/consumerRunningInfo.query")
     @ResponseBody
     public Object getConsumerRunningInfo(@RequestParam String consumerGroup, @RequestParam String clientId,
-        @RequestParam boolean jstack) {
+                                         @RequestParam boolean jstack) {
         return consumerService.getConsumerRunningInfo(consumerGroup, clientId, jstack);
     }
+
+
+    /**
+     * 查询指定groupName（消费分组）对应 TopicConsumerInfo列表
+     * TopicConsumerInfo 内部存储指定topic指定groupName消费汇总信息
+     *
+     * @param consumerGroup 消费分组
+     * @return
+     */
+    @RequestMapping(value = "/queryTopicByConsumer.query")
+    @ResponseBody
+    public Object queryConsumerByTopic(@RequestParam String consumerGroup) {
+        return consumerService.queryConsumeStatsListByGroupName(consumerGroup);
+    }
+
+    /**
+     * 查询消费分组在所有broker节点的配置
+     *
+     * @param consumerGroup
+     * @return
+     */
+    @RequestMapping(value = "/examineSubscriptionGroupConfig.query")
+    @ResponseBody
+    public Object examineSubscriptionGroupConfig(@RequestParam String consumerGroup) {
+        return consumerService.examineSubscriptionGroupConfig(consumerGroup);
+    }
+
+    /**
+     * 重置指定消费分组的指定topic 的进度（按时间）
+     *
+     * @param resetOffsetRequest
+     * @return
+     */
+    @RequestMapping(value = "/resetOffset.do", method = {RequestMethod.POST})
+    @ResponseBody
+    public Object resetOffset(@RequestBody ResetOffsetRequest resetOffsetRequest) {
+        logger.info("op=look resetOffsetRequest={}", JsonUtil.obj2String(resetOffsetRequest));
+        return consumerService.resetOffset(resetOffsetRequest);
+    }
+
+
+    /**
+     * 向broker删除消费分组
+     *
+     * @param deleteSubGroupRequest
+     * @return
+     */
+    @RequestMapping(value = "/deleteSubGroup.do", method = {RequestMethod.POST})
+    @ResponseBody
+    public Object deleteSubGroup(@RequestBody DeleteSubGroupRequest deleteSubGroupRequest) {
+        return consumerService.deleteSubGroup(deleteSubGroupRequest);
+    }
+
+    /**
+     * 向broker创建更新消费分组及其配置信息
+     *
+     * @param consumerConfigInfo
+     * @return
+     */
+    @RequestMapping(value = "/createOrUpdate.do", method = {RequestMethod.POST})
+    @ResponseBody
+    public Object consumerCreateOrUpdateRequest(@RequestBody ConsumerConfigInfo consumerConfigInfo) {
+        Preconditions.checkArgument(CollectionUtils.isNotEmpty(consumerConfigInfo.getBrokerNameList()) || CollectionUtils.isNotEmpty(consumerConfigInfo.getClusterNameList()),
+                "clusterName or brokerName can not be all blank");
+        return consumerService.createAndUpdateSubscriptionGroupConfig(consumerConfigInfo);
+    }
+
+    /**
+     * 查询消费分组关联broker名称集合
+     *
+     * @param consumerGroup
+     * @return
+     */
+    @RequestMapping(value = "/fetchBrokerNameList.query", method = {RequestMethod.GET})
+    @ResponseBody
+    public Object fetchBrokerNameList(@RequestParam String consumerGroup) {
+        return consumerService.fetchBrokerNameSetBySubscriptionGroup(consumerGroup);
+    }
+
+
 }
