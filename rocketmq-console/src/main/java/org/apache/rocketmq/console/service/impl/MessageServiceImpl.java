@@ -23,12 +23,14 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Resource;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.acl.common.AclClientRPCHook;
 import org.apache.rocketmq.acl.common.SessionCredentials;
@@ -68,6 +70,13 @@ public class MessageServiceImpl implements MessageService {
     @Resource
     private MQAdminExt mqAdminExt;
 
+    /**
+     * 根据消息topic和消息msgId精确查找消息
+     *
+     * @param subject 消息topic
+     * @param msgId   消息msgId
+     * @return
+     */
     @Override
     public Pair<MessageView, List<MessageTrack>> viewMessage(String subject, final String msgId) {
         try {
@@ -75,12 +84,18 @@ public class MessageServiceImpl implements MessageService {
             MessageExt messageExt = mqAdminExt.viewMessage(subject, msgId);
             List<MessageTrack> messageTrackList = messageTrackDetail(messageExt);
             return new Pair<>(MessageView.fromMessageExt(messageExt), messageTrackList);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new ServiceException(-1, String.format("Failed to query message by Id: %s", msgId));
         }
     }
 
+    /**
+     * 根据消息topic和消息msgkey模糊查找消息
+     *
+     * @param topic 消息topic
+     * @param key   消息key
+     * @return
+     */
     @Override
     public List<MessageView> queryMessageByTopicAndKey(String topic, String key) {
         try {
@@ -90,27 +105,46 @@ public class MessageServiceImpl implements MessageService {
                     return MessageView.fromMessageExt(messageExt);
                 }
             });
-        }
-        catch (Exception err) {
+        } catch (Exception err) {
             throw Throwables.propagate(err);
         }
     }
 
+    /**
+     * 根据消息topic和消息创建的开始时间和结束时间查找消息
+     *
+     * @param topic
+     * @param begin
+     * @param end
+     * @return
+     */
     @Override
     public List<MessageView> queryMessageByTopic(String topic, final long begin, final long end) {
+        //查看配置是否需要acl
         boolean isEnableAcl = !StringUtils.isEmpty(configure.getAccessKey()) && !StringUtils.isEmpty(configure.getSecretKey());
+
+        //如果配置开启acl，创建AclClientRPCHook
         RPCHook rpcHook = null;
         if (isEnableAcl) {
-            rpcHook = new AclClientRPCHook(new SessionCredentials(configure.getAccessKey(),configure.getSecretKey()));
+            rpcHook = new AclClientRPCHook(new SessionCredentials(configure.getAccessKey(), configure.getSecretKey()));
         }
-        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP,rpcHook);
+
+        //创建DefaultMQPullConsumer
+        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP, rpcHook);
+
+        //创建临时列表存储消息视图
         List<MessageView> messageViewList = Lists.newArrayList();
         try {
             String subExpression = "*";
             consumer.start();
+            //根据消息topic对应MessageQueue(消息队列列表)
             Set<MessageQueue> mqs = consumer.fetchSubscribeMessageQueues(topic);
+
+            //遍历MessageQueue
             for (MessageQueue mq : mqs) {
+                //获取每个MessageQueue 大于指定时间最小逻辑偏移
                 long minOffset = consumer.searchOffset(mq, begin);
+                //获取每个MessageQueue 小于指定时间最小逻辑偏移
                 long maxOffset = consumer.searchOffset(mq, end);
                 READQ:
                 for (long offset = minOffset; offset <= maxOffset; ) {
@@ -146,8 +180,7 @@ public class MessageServiceImpl implements MessageService {
                             case OFFSET_ILLEGAL:
                                 break READQ;
                         }
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         break;
                     }
                 }
@@ -162,11 +195,9 @@ public class MessageServiceImpl implements MessageService {
                 }
             });
             return messageViewList;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
-        }
-        finally {
+        } finally {
             consumer.shutdown();
         }
     }
@@ -175,8 +206,7 @@ public class MessageServiceImpl implements MessageService {
     public List<MessageTrack> messageTrackDetail(MessageExt msg) {
         try {
             return mqAdminExt.messageTrackDetail(msg);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("op=messageTrackDetailError", e);
             return Collections.emptyList();
         }
@@ -185,12 +215,11 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public ConsumeMessageDirectlyResult consumeMessageDirectly(String topic, String msgId, String consumerGroup,
-        String clientId) {
+                                                               String clientId) {
         if (StringUtils.isNotBlank(clientId)) {
             try {
                 return mqAdminExt.consumeMessageDirectly(consumerGroup, clientId, topic, msgId);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
         }
@@ -204,8 +233,7 @@ public class MessageServiceImpl implements MessageService {
                 logger.info("clientId={}", connection.getClientId());
                 return mqAdminExt.consumeMessageDirectly(consumerGroup, connection.getClientId(), topic, msgId);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
         throw new IllegalStateException("NO CONSUMER");

@@ -33,15 +33,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/message")
 public class MessageController {
     private Logger logger = LoggerFactory.getLogger(MessageController.class);
+
+    /**
+     * 消息服务类
+     */
     @Resource
     private MessageService messageService;
 
+    /**
+     * 根据消息topic和消息msgId精确查找消息
+     *
+     * @param topic 消息topic
+     * @param msgId 消息msgId
+     * @return
+     */
     @RequestMapping(value = "/viewMessage.query", method = RequestMethod.GET)
     @ResponseBody
     public Object viewMessage(@RequestParam(required = false) String topic, @RequestParam String msgId) {
@@ -52,24 +64,39 @@ public class MessageController {
         return messageViewMap;
     }
 
+    /**
+     * 根据消息topic和消息msgkey模糊查找消息
+     *
+     * @param topic 消息topic
+     * @param key   消息msgId
+     * @return
+     */
     @RequestMapping(value = "/queryMessageByTopicAndKey.query", method = RequestMethod.GET)
     @ResponseBody
     public Object queryMessageByTopicAndKey(@RequestParam String topic, @RequestParam String key) {
         return messageService.queryMessageByTopicAndKey(topic, key);
     }
 
+    /**
+     * 根据消息topic和消息创建的开始时间和结束时间查找消息
+     *
+     * @param topic 消息topic
+     * @param begin 开始时间
+     * @param end   结束时间
+     * @return
+     */
     @RequestMapping(value = "/queryMessageByTopic.query", method = RequestMethod.GET)
     @ResponseBody
     public Object queryMessageByTopic(@RequestParam String topic, @RequestParam long begin,
-        @RequestParam long end) {
+                                      @RequestParam long end) {
         return messageService.queryMessageByTopic(topic, begin, end);
     }
 
     @RequestMapping(value = "/consumeMessageDirectly.do", method = RequestMethod.POST)
     @ResponseBody
     public Object consumeMessageDirectly(@RequestParam String topic, @RequestParam String consumerGroup,
-        @RequestParam String msgId,
-        @RequestParam(required = false) String clientId) {
+                                         @RequestParam String msgId,
+                                         @RequestParam(required = false) String clientId) {
         logger.info("msgId={} consumerGroup={} clientId={}", msgId, consumerGroup, clientId);
         ConsumeMessageDirectlyResult consumeMessageDirectlyResult = messageService.consumeMessageDirectly(topic, msgId, consumerGroup, clientId);
         logger.info("consumeMessageDirectlyResult={}", JsonUtil.obj2String(consumeMessageDirectlyResult));
