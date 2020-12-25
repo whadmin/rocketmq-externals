@@ -20,12 +20,39 @@ import org.apache.rocketmq.common.admin.OffsetWrapper;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.springframework.beans.BeanUtils;
 
+/**
+ * 指定topic指定Consumer分组每个消费队列消费进度信息以及分配consumer客户端
+ */
 public class QueueStatInfo {
+    /**
+     * broker节点名称
+     */
     private String brokerName;
+
+    /**
+     * broker节点内部消费队列Id
+     */
     private int queueId;
+
+    /**
+     * broker节点内部消费队列存储消息的逻辑偏移
+     */
     private long brokerOffset;
+
+    /**
+     * broker节点内部消费队列被consumer消费的逻辑偏移
+     */
     private long consumerOffset;
+
+    /**
+     * 消费该broker节点内部消费队列对应客户端（IP+端口）
+     * 消费该broker节点内部消费队列都会分配给Consumer分组内部一个Consumer
+     */
     private String clientInfo;
+
+    /**
+     * 最后产生消息的时间
+     */
     private long lastTimestamp;
 
     public static QueueStatInfo fromOffsetTableEntry(MessageQueue key, OffsetWrapper value) {

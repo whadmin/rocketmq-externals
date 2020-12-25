@@ -28,6 +28,15 @@ import org.apache.commons.collections.CollectionUtils;
 public abstract class AbstractCommonService {
     @Resource
     protected MQAdminExt mqAdminExt;
+
+    /**
+     * 获取broker节点名称集合
+     *
+     * @param clusterAddrTable  剧情
+     * @param clusterNameList
+     * @param brokerNameList
+     * @return
+     */
     protected final Set<String> changeToBrokerNameSet(HashMap<String, Set<String>> clusterAddrTable,
         List<String> clusterNameList, List<String> brokerNameList) {
         Set<String> finalBrokerNameList = Sets.newHashSet();

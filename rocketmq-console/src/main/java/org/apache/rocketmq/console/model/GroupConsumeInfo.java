@@ -19,13 +19,37 @@ package org.apache.rocketmq.console.model;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 
+/**
+ * 消费分组详细信息
+ */
 public class GroupConsumeInfo implements Comparable<GroupConsumeInfo> {
+    /**
+     * 消费分组名称
+     */
     private String group;
+    /**
+     * 消费分组客户端版本号
+     */
     private String version;
+    /**
+     * 消费分组客户端实例数量
+     */
     private int count;
+    /**
+     * 消费分组客户端类型（推，拉）
+     */
     private ConsumeType consumeType;
+    /**
+     * 消费分组消费模型（广播，集群）
+     */
     private MessageModel messageModel;
+    /**
+     * 消费分组TPS
+     */
     private int consumeTps;
+    /**
+     * 消费分组所有消息队列未消息进度（消息堆积情况）
+     */
     private long diffTotal = -1;
 
     public String getGroup() {

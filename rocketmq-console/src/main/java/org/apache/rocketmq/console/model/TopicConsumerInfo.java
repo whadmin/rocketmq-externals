@@ -20,10 +20,29 @@ import com.google.common.collect.Lists;
 
 import java.util.List;
 
+/**
+ * 指定topic指定groupName消费汇总信息
+ */
 public class TopicConsumerInfo {
+
+    /**
+     * topic名称
+     */
     private String topic;
+
+    /**
+     * topic+Consumer消费堆积
+     */
     private long diffTotal;
+
+    /**
+     * topic+Consumer最后一条消息产生时间
+     */
     private long lastTimestamp;
+
+    /**
+     * topic+Consumer每个消费队列消费进度信息
+     */
     private List<QueueStatInfo> queueStatInfoList = Lists.newArrayList();
 
     public TopicConsumerInfo(String topic) {

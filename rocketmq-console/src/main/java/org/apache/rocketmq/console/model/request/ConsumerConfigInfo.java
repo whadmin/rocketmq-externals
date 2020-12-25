@@ -20,10 +20,23 @@ import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
 
 import java.util.List;
 
+/**
+ * 消费分组配置
+ */
 public class ConsumerConfigInfo {
+    /**
+     * 消费分组关联的集群
+     */
     private List<String> clusterNameList;
 
+    /**
+     * 消费分组关联的broker节点
+     */
     private List<String> brokerNameList;
+
+    /**
+     * 消费分组配置
+     */
     private SubscriptionGroupConfig subscriptionGroupConfig;
 
     public ConsumerConfigInfo() {

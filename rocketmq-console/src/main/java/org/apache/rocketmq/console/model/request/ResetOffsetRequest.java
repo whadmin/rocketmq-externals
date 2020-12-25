@@ -18,10 +18,25 @@ package org.apache.rocketmq.console.model.request;
 
 import java.util.List;
 
+/**
+ * 重置指定消费分组的指定topic 的进度（按时间）
+ */
 public class ResetOffsetRequest {
+    /**
+     * 指定消费分组列表
+     */
     private List<String> consumerGroupList;
+    /**
+     * topic名称
+     */
     private String topic;
+    /**
+     * 时间
+     */
     private long resetTime;
+    /**
+     *
+     */
     private boolean force;
 
     public List<String> getConsumerGroupList() {
