@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.Resource;
+
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
@@ -32,12 +33,25 @@ public class ClusterController {
     @Resource
     private ClusterService clusterService;
 
+    /**
+     * 查询集群信息（包含所有集群和关联broker节点，broker节点内部属性状态）
+     * 同时查询集群所有broker实例内部属性
+     *
+     * @return
+     */
     @RequestMapping(value = "/list.query", method = RequestMethod.GET)
     @ResponseBody
     public Object list() {
         return clusterService.list();
     }
 
+
+    /**
+     * 查询指定broker实例内部属性
+     *
+     * @param brokerAddr
+     * @return
+     */
     @RequestMapping(value = "/brokerConfig.query", method = RequestMethod.GET)
     @ResponseBody
     public Object brokerConfig(@RequestParam String brokerAddr) {

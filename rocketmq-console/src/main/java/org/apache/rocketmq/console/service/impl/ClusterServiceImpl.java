@@ -39,18 +39,30 @@ public class ClusterServiceImpl implements ClusterService {
     @Resource
     private MQAdminExt mqAdminExt;
 
+    /**
+     * 查询集群信息（包含所有集群和关联broker节点，broker节点内部属性）
+     * 同时查询集群所有broker实例内部属性
+     *
+     * @return
+     */
     @Override
     public Map<String, Object> list() {
         try {
+            //临时存储结果
             Map<String, Object> resultMap = Maps.newHashMap();
-            ClusterInfo clusterInfo = mqAdminExt.examineBrokerClusterInfo();
-            logger.info("op=look_clusterInfo {}", JsonUtil.obj2String(clusterInfo));
+
+            //临时存储每个borker节点内部不同类型broker实例(0:master,1:slave)的内部属性
             Map<String/*brokerName*/, Map<Long/* brokerId */, Object/* brokerDetail */>> brokerServer = Maps.newHashMap();
+
+            //1 查询集群信息（包含所有集群和关联broker节点，broker节点内部属性）
+            ClusterInfo clusterInfo = mqAdminExt.examineBrokerClusterInfo();
+            //2 遍历集群所有broker节点数据
             for (BrokerData brokerData : clusterInfo.getBrokerAddrTable().values()) {
                 Map<Long, Object> brokerMasterSlaveMap = Maps.newHashMap();
+                //3 遍历broker节点所有broker实例
                 for (Map.Entry<Long/* brokerId */, String/* broker address */> brokerAddr : brokerData.getBrokerAddrs().entrySet()) {
+                    //获取每个broker节点实例内部属性
                     KVTable kvTable = mqAdminExt.fetchBrokerRuntimeStats(brokerAddr.getValue());
-//                KVTable kvTable = mqAdminExt.fetchBrokerRuntimeStats("127.0.0.1:10911");
                     brokerMasterSlaveMap.put(brokerAddr.getKey(), kvTable.getTable());
                 }
                 brokerServer.put(brokerData.getBrokerName(), brokerMasterSlaveMap);
@@ -58,19 +70,23 @@ public class ClusterServiceImpl implements ClusterService {
             resultMap.put("clusterInfo", clusterInfo);
             resultMap.put("brokerServer", brokerServer);
             return resultMap;
-        }
-        catch (Exception err) {
+        } catch (Exception err) {
             throw Throwables.propagate(err);
         }
     }
 
 
+    /**
+     * 查询指定broker实例内部属性
+     *
+     * @param brokerAddr
+     * @return
+     */
     @Override
     public Properties getBrokerConfig(String brokerAddr) {
         try {
             return mqAdminExt.getBrokerConfig(brokerAddr);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
