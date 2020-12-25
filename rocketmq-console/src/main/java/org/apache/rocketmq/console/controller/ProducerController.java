@@ -17,6 +17,7 @@
 package org.apache.rocketmq.console.controller;
 
 import javax.annotation.Resource;
+
 import org.apache.rocketmq.common.protocol.body.ProducerConnection;
 import org.apache.rocketmq.console.model.ConnectionInfo;
 import org.apache.rocketmq.console.service.ProducerService;
@@ -33,6 +34,13 @@ public class ProducerController {
     @Resource
     private ProducerService producerService;
 
+    /**
+     * 查询指定指定producerGroup（生产分组） ProducerConnection(生产分组连接信息)
+     *
+     * @param producerGroup
+     * @param topic
+     * @return
+     */
     @RequestMapping(value = "/producerConnection.query", method = {RequestMethod.GET})
     @ResponseBody
     public Object producerConnection(@RequestParam String producerGroup, @RequestParam String topic) {

@@ -18,7 +18,9 @@
 package org.apache.rocketmq.console.service.impl;
 
 import com.google.common.base.Throwables;
+
 import javax.annotation.Resource;
+
 import org.apache.rocketmq.common.protocol.body.ProducerConnection;
 import org.apache.rocketmq.console.service.ProducerService;
 import org.apache.rocketmq.tools.admin.MQAdminExt;
@@ -29,12 +31,18 @@ public class ProducerServiceImpl implements ProducerService {
     @Resource
     private MQAdminExt mqAdminExt;
 
+    /**
+     * 查询指定指定producerGroup（生产分组） ProducerConnection(生产分组连接信息)
+     *
+     * @param producerGroup
+     * @param topic
+     * @return
+     */
     @Override
     public ProducerConnection getProducerConnection(String producerGroup, String topic) {
         try {
             return mqAdminExt.examineProducerConnectionInfo(producerGroup, topic);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
