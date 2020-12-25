@@ -50,65 +50,99 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Topic服务实现类
+ */
 @Service
 public class TopicServiceImpl extends AbstractCommonService implements TopicService {
 
     @Autowired
     private RMQConfigure rMQConfigure;
 
+    /**
+     * 获取当前系统集群所有 TopicList
+     *
+     * @param skipSysProcess 是否不对系统Topic在返回时候添加前置%SYS%
+     * @return
+     */
     @Override
     public TopicList fetchAllTopicList(boolean skipSysProcess) {
         try {
-            TopicList allTopics =  mqAdminExt.fetchAllTopicList();
+            //获取系统集群所有Topic 列表
+            TopicList allTopics = mqAdminExt.fetchAllTopicList();
+
+            //不对系统Topic在返回时候添加前置%SYS%直接返回
             if (skipSysProcess) {
                 return allTopics;
             }
-
+            //获取系统Topic列表
             TopicList sysTopics = getSystemTopicList();
+
+            //临时存储返回结果
             Set<String> topics = new HashSet<>();
 
-            for (String topic: allTopics.getTopicList()) {
+            //遍历allTopics,对于系统Topic列表添加前置%SYS%添加到topics
+            for (String topic : allTopics.getTopicList()) {
                 if (sysTopics.getTopicList().contains(topic)) {
                     topics.add(String.format("%s%s", "%SYS%", topic));
                 } else {
                     topics.add(topic);
                 }
             }
+            //清理allTopics
             allTopics.getTopicList().clear();
+            //添加topics
             allTopics.getTopicList().addAll(topics);
+            //返回
             return allTopics;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
 
+    /**
+     * 获取TopicStatsTable状态信息
+     * TopicStatsTable内部包括该Topic每个MessageQueue信息，以及每个MessageQueue逻辑偏移信息
+     *
+     * @param topic 消息topic
+     * @return
+     */
     @Override
     public TopicStatsTable stats(String topic) {
         try {
             return mqAdminExt.examineTopicStats(topic);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
 
+    /**
+     * 获取TopicRouteData 主题路由信息
+     * TopicRouteData内部包括Topic消息队列信息（包括分配规则和数据同步方式）列表，TopicBroker节点列表
+     *
+     * @param topic
+     * @return
+     */
     @Override
     public TopicRouteData route(String topic) {
         try {
             return mqAdminExt.examineTopicRouteInfo(topic);
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             throw Throwables.propagate(ex);
         }
     }
 
+    /**
+     * 获取指定Topic当前集群在线的消费分组列表（还在线通信的）
+     *
+     * @param topic
+     * @return
+     */
     @Override
     public GroupList queryTopicConsumerInfo(String topic) {
         try {
             return mqAdminExt.queryTopicConsumeByWho(topic);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
     }
@@ -120,11 +154,10 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
         try {
             ClusterInfo clusterInfo = mqAdminExt.examineBrokerClusterInfo();
             for (String brokerName : changeToBrokerNameSet(clusterInfo.getClusterAddrTable(),
-                topicCreateOrUpdateRequest.getClusterNameList(), topicCreateOrUpdateRequest.getBrokerNameList())) {
+                    topicCreateOrUpdateRequest.getClusterNameList(), topicCreateOrUpdateRequest.getBrokerNameList())) {
                 mqAdminExt.createAndUpdateTopicConfig(clusterInfo.getBrokerAddrTable().get(brokerName).selectBrokerAddr(), topicConfig);
             }
-        }
-        catch (Exception err) {
+        } catch (Exception err) {
             throw Throwables.propagate(err);
         }
     }
@@ -134,8 +167,7 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
         ClusterInfo clusterInfo = null;
         try {
             clusterInfo = mqAdminExt.examineBrokerClusterInfo();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
         return mqAdminExt.examineTopicConfig(clusterInfo.getBrokerAddrTable().get(brokerName).selectBrokerAddr(), topic);
@@ -169,8 +201,7 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
                 nameServerSet = new HashSet<String>(Arrays.asList(ns));
             }
             mqAdminExt.deleteTopicInNameServer(nameServerSet, topic);
-        }
-        catch (Exception err) {
+        } catch (Exception err) {
             throw Throwables.propagate(err);
         }
         return true;
@@ -181,8 +212,7 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
         ClusterInfo clusterInfo = null;
         try {
             clusterInfo = mqAdminExt.examineBrokerClusterInfo();
-        }
-        catch (Exception err) {
+        } catch (Exception err) {
             throw Throwables.propagate(err);
         }
         for (String clusterName : clusterInfo.getClusterAddrTable().keySet()) {
@@ -198,36 +228,31 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
             ClusterInfo clusterInfo = null;
             try {
                 clusterInfo = mqAdminExt.examineBrokerClusterInfo();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
             mqAdminExt.deleteTopicInBroker(Sets.newHashSet(clusterInfo.getBrokerAddrTable().get(brokerName).selectBrokerAddr()), topic);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
         }
         return true;
     }
 
-    private TopicList  getSystemTopicList() {
+    private TopicList getSystemTopicList() {
         RPCHook rpcHook = null;
         boolean isEnableAcl = !StringUtils.isEmpty(rMQConfigure.getAccessKey()) && !StringUtils.isEmpty(rMQConfigure.getSecretKey());
         if (isEnableAcl) {
-            rpcHook = new AclClientRPCHook(new SessionCredentials(rMQConfigure.getAccessKey(),rMQConfigure.getSecretKey()));
+            rpcHook = new AclClientRPCHook(new SessionCredentials(rMQConfigure.getAccessKey(), rMQConfigure.getSecretKey()));
         }
-        DefaultMQProducer producer = new DefaultMQProducer(MixAll.SELF_TEST_PRODUCER_GROUP,rpcHook);
+        DefaultMQProducer producer = new DefaultMQProducer(MixAll.SELF_TEST_PRODUCER_GROUP, rpcHook);
         producer.setInstanceName(String.valueOf(System.currentTimeMillis()));
         producer.setNamesrvAddr(rMQConfigure.getNamesrvAddr());
-
         try {
             producer.start();
             return producer.getDefaultMQProducerImpl().getmQClientFactory().getMQClientAPIImpl().getSystemTopicList(20000L);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
-        }
-        finally {
+        } finally {
             producer.shutdown();
         }
     }
@@ -251,16 +276,14 @@ public class TopicServiceImpl extends AbstractCommonService implements TopicServ
         try {
             producer.start();
             Message msg = new Message(sendTopicMessageRequest.getTopic(),
-                sendTopicMessageRequest.getTag(),
-                sendTopicMessageRequest.getKey(),
-                sendTopicMessageRequest.getMessageBody().getBytes()
+                    sendTopicMessageRequest.getTag(),
+                    sendTopicMessageRequest.getKey(),
+                    sendTopicMessageRequest.getMessageBody().getBytes()
             );
             return producer.send(msg);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw Throwables.propagate(e);
-        }
-        finally {
+        } finally {
             producer.shutdown();
         }
     }
